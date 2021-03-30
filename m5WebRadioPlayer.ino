@@ -1,5 +1,4 @@
 #include <M5StickC.h>
-#include <WiFi.h>
 #include <AudioFileSource.h>
 #include <AudioFileSourceBuffer.h>
 #include <AudioFileSourceICYStream.h>
@@ -7,6 +6,7 @@
 #include <AudioGeneratorMP3.h>
 #include <AudioOutputI2S.h>
 #include <AudioOutputI2SNoDAC.h>
+#include <WiFiManager.h> //https://github.com/tzapu/WiFiManager WiFi Configuration Magic
 #include <spiram-fast.h>
 
 //
@@ -17,8 +17,8 @@
 //
 
 // Enter your WiFi, Station, button settings here:
-const char *SSID = "YOUR WiFi SSID";
-const char *PASSWORD = "YOUR WiFi Password";
+WiFiManager wifiManager;
+bool isWifiConfigSucceeded = false;
 const int bufferSize = 16 * 1024; // buffer in byte, default 16 * 1024 = 16kb
 char *arrayURL[] = {
     "http://51.81.46.118:3340/",
@@ -194,6 +194,64 @@ void ColorBar()
   delay(500);
 }
 
+void setupWiFi()
+{
+  wifiManager.setAPCallback(configModeCallback);
+
+  // clicking power button at boot time to enter wifi config mode
+  bool doManualConfig = false;
+  showMessage("Push POWER button to enter Wifi config.");
+  for(int i=0 ; i<200 ; i++) {
+    M5.update();
+    if (M5.Axp.GetBtnPress()) {
+      doManualConfig = true;
+      break;
+    }
+    delay(10);
+  }
+
+  if (doManualConfig) {
+    Serial.println("wifiManager.startConfigPortal()");
+    if (wifiManager.startConfigPortal()) {
+      isWifiConfigSucceeded = true;
+      Serial.println("startConfigPortal() connect success!");
+    }
+    else {
+      Serial.println("startConfigPortal() connect failed!");
+    }
+  } else {
+    showMessage("Wi-Fi connecting...");
+
+    Serial.println("wifiManager.autoConnect()");
+    if (wifiManager.autoConnect()) {
+      isWifiConfigSucceeded = true;
+      Serial.println("autoConnect() connect success!");
+    }
+    else {
+      Serial.println("autoConnect() connect failed!");
+    }
+  }
+
+  if (isWifiConfigSucceeded) {
+    showMessage("Wi-Fi connected.");
+  } else {
+    showMessage("Wi-Fi failed.");
+  }
+}
+void showMessage(String msg)
+{
+  M5.Lcd.setTextSize(1);
+  M5.Lcd.setCursor(0, 10, 2);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.println(msg);
+}
+void configModeCallback (WiFiManager *myWiFiManager) {
+  Serial.println("Entered config mode");
+  Serial.println(WiFi.softAPIP());
+  Serial.println(myWiFiManager->getConfigPortalSSID());
+  showMessage("Please connect to this AP\nto config WiFi\nSSID: " + myWiFiManager->getConfigPortalSSID());
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -222,9 +280,7 @@ void setup()
   M5.Lcd.println("M5StickC");
   M5.Lcd.println("    WebRadio");
   delay(1000);
-  M5.Lcd.println("WiFi");
-  M5.Lcd.println("  Connecting");
-  initwifi();
+  setupWiFi();
 
   //  StartPlaying();
   M5.Lcd.fillScreen(BLACK);
@@ -424,27 +480,6 @@ void StopPlaying()
   Serial.flush();
 }
 
-void initwifi()
-{
-  WiFi.disconnect();
-  WiFi.softAPdisconnect(true);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(SSID, PASSWORD);
-
-  // Try forever
-  int i = 0;
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print("STATUS(Connecting to WiFi) ");
-    delay(1000);
-    i = i + 1;
-    if (i > 10)
-    {
-      ESP.restart();
-    }
-  }
-  Serial.println("OK");
-}
 
 // Called when a metadata event occurs (i.e. an ID3 tag, an ICY block, etc.
 void MDCallback(void *cbData, const char *type, bool isUnicode, const char *string)
