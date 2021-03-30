@@ -17,8 +17,8 @@
 //
 
 // Enter your WiFi, Station, button settings here:
-const char *SSID = "XXXX";
-const char *PASSWORD = "XXXX";
+const char *SSID = "YOUR WiFi SSID";
+const char *PASSWORD = "YOUR WiFi Password";
 const int bufferSize = 16 * 1024; // buffer in byte, default 16 * 1024 = 16kb
 char *arrayURL[] = {
     "http://51.81.46.118:3340/",
