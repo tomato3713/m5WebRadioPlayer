@@ -1,4 +1,5 @@
 #include <M5StickC.h>
+#include <WiFi.h>
 #include <AudioFileSource.h>
 #include <AudioFileSourceBuffer.h>
 #include <AudioFileSourceICYStream.h>
@@ -212,7 +213,7 @@ void setupWiFi()
 
   if (doManualConfig) {
     Serial.println("wifiManager.startConfigPortal()");
-    if (wifiManager.startConfigPortal()) {
+    if (wifiManager.startConfigPortal("M5WebRadioAP")) {
       isWifiConfigSucceeded = true;
       Serial.println("startConfigPortal() connect success!");
     }
@@ -249,7 +250,7 @@ void configModeCallback (WiFiManager *myWiFiManager) {
   Serial.println("Entered config mode");
   Serial.println(WiFi.softAPIP());
   Serial.println(myWiFiManager->getConfigPortalSSID());
-  showMessage("Please connect to this AP\nto config WiFi\nSSID: " + myWiFiManager->getConfigPortalSSID());
+  showMessage("Please connect to the AP to config WiFi\n\nSSID: " + myWiFiManager->getConfigPortalSSID());
 }
 
 void setup()
